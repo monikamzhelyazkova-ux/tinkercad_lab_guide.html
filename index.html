@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tinkercad Лабораторно: Енкодери</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .code-block { background: #1e293b; color: #e2e8f0; padding: 1.5rem; border-radius: 0.75rem; font-family: 'Fira Code', monospace; position: relative; }
+        .copy-btn { position: absolute; top: 0.5rem; right: 0.5rem; background: #334155; padding: 0.25rem 0.75rem; border-radius: 0.25rem; font-size: 0.75rem; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 pb-20">
+
+    <!-- Header -->
+    <header class="bg-indigo-600 text-white py-12 px-4 shadow-lg">
+        <div class="max-w-4xl mx-auto">
+            <h1 class="text-3xl md:text-4xl font-bold mb-2">Лабораторно: Енкодери в Tinkercad</h1>
+            <p class="text-indigo-100 italic">Превръщане на теорията в работещ код с Arduino Uno.</p>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 mt-10 space-y-12">
+
+        <!-- Секция 1: Необходими компоненти -->
+        <section class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+            <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">
+                <i class="fas fa-list-check text-indigo-600"></i> Списък с компоненти
+            </h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div class="p-4 border rounded-xl bg-slate-50">
+                    <i class="fas fa-microchip text-2xl mb-2 text-indigo-500"></i>
+                    <p class="text-xs font-bold uppercase">Arduino Uno</p>
+                </div>
+                <div class="p-4 border rounded-xl bg-slate-50">
+                    <i class="fas fa-circle-notch text-2xl mb-2 text-indigo-500"></i>
+                    <p class="text-xs font-bold uppercase">Rotary Encoder</p>
+                </div>
+                <div class="p-4 border rounded-xl bg-slate-50">
+                    <i class="fas fa-plug text-2xl mb-2 text-indigo-500"></i>
+                    <p class="text-xs font-bold uppercase">Проводници</p>
+                </div>
+                <div class="p-4 border rounded-xl bg-slate-50">
+                    <i class="fas fa-laptop-code text-2xl mb-2 text-indigo-500"></i>
+                    <p class="text-xs font-bold uppercase">Serial Monitor</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Секция 2: Схема на свързване -->
+        <section class="space-y-6">
+            <h2 class="text-2xl font-bold flex items-center gap-3">
+                <i class="fas fa-project-diagram text-indigo-600"></i> Свързване в Tinkercad
+            </h2>
+            <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+                <div class="bg-slate-100 p-6 rounded-xl mb-6 text-center">
+                    
+                    <p class="text-xs text-slate-500 mt-2 italic">Визуална инструкция за свързване на пинове А, B и Common.</p>
+                </div>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <ul class="space-y-3 text-sm">
+                        <li class="flex gap-3"><strong class="text-indigo-600">Terminal A:</strong> Свържете към Pin 2 (Arduino)</li>
+                        <li class="flex gap-3"><strong class="text-indigo-600">Terminal B:</strong> Свържете към Pin 3 (Arduino)</li>
+                        <li class="flex gap-3"><strong class="text-indigo-600">Terminal C (Common):</strong> Свържете към GND</li>
+                    </ul>
+                    <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 text-xs text-blue-800 leading-relaxed">
+                        <i class="fas fa-info-circle mr-1"></i> <strong>Важно:</strong> Използваме пинове 2 и 3, защото те поддържат <strong>Хардуерни прекъсвания (Interrupts)</strong>, което гарантира, че няма да пропуснем нито един импулс при бързо въртене.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Секция 3: Програмен код -->
+        <section class="space-y-6">
+            <h2 class="text-2xl font-bold flex items-center gap-3">
+                <i class="fas fa-terminal text-indigo-600"></i> Програмен код (Arduino C++)
+            </h2>
+            <p class="text-slate-600 text-sm">Копирайте този код в секцията <strong>Code -> Text</strong> на Tinkercad:</p>
+            
+            <div class="code-block text-sm overflow-x-auto">
+                <pre>
+// Дефиниране на пиновете
+const int PinA = 2; 
+const int PinB = 3;
+
+// Променливи за състоянието
+volatile long pulseCount = 0;
+int lastStateA;
+
+void setup() {
+  pinMode(PinA, INPUT_PULLUP);
+  pinMode(PinB, INPUT_PULLUP);
+  
+  Serial.begin(9600);
+  
+  // Четене на началното състояние
+  lastStateA = digitalRead(PinA);
+  
+  // Настройка на прекъсване при промяна на сигнала
+  attachInterrupt(digitalPinToInterrupt(PinA), updateEncoder, CHANGE);
+}
+
+void loop() {
+  // Извеждане на резултата в Serial Monitor
+  Serial.print("Импулси: ");
+  Serial.print(pulseCount);
+  
+  // ПРЕСМЯТАНЕ НА ЪГЪЛ (Задача 1)
+  float angle = (pulseCount * 360.0) / 360.0; // Пример за 360 PPR
+  Serial.print(" | Ъгъл: ");
+  Serial.println(angle);
+  
+  delay(100);
+}
+
+void updateEncoder() {
+  int currentStateA = digitalRead(PinA);
+  if (currentStateA != lastStateA) {
+    // Проверка на посоката чрез Канал B
+    if (digitalRead(PinB) != currentStateA) {
+      pulseCount++;
+    } else {
+      pulseCount--;
+    }
+  }
+  lastStateA = currentStateA;
+}
+                </pre>
+            </div>
+        </section>
+
+        <!-- Секция 4: Практически упражнения в Tinkercad -->
+        <section class="space-y-8">
+            <h2 class="text-2xl font-bold text-center">🚀 Изпълнение на задачите</h2>
+            
+            <div class="grid gap-6">
+                <div class="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
+                    <h4 class="font-bold text-indigo-600 mb-2">Упражнение 1: Проверка на посоката</h4>
+                    <p class="text-sm text-slate-600">Завъртете енкодера надясно в Tinkercad. Числото в Serial Monitor расте ли? Сега завъртете наляво. Числото трябва да намалява. Ако е обратното - разменете местата на кабелите на Pin 2 и Pin 3.</p>
+                </div>
+
+                <div class="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
+                    <h4 class="font-bold text-indigo-600 mb-2">Упражнение 2: Точно позициониране</h4>
+                    <p class="text-sm text-slate-600">Променете кода така, че когато `pulseCount` достигне 100, в Serial Monitor да се изпише: <strong>"Целта е достигната!"</strong>. Това симулира спирането на робот на определено място.</p>
+                </div>
+
+                <div class="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
+                    <h4 class="font-bold text-indigo-600 mb-2">Упражнение 3: Резолюция и Градуси</h4>
+                    <p class="text-sm text-slate-600">В Tinkercad енкодерът има различна резолюция (обикновено 12-24 стъпки). Променете числото 360.0 във формулата в кода с реалния брой стъпки, които преброявате за един оборот, за да получите точния ъгъл.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Покана за тестване -->
+        <div class="bg-indigo-900 text-white p-10 rounded-3xl text-center">
+            <h3 class="text-2xl font-bold mb-4">Готови ли сте?</h3>
+            <p class="mb-6 opacity-80">Отворете Tinkercad, сглобете схемата и вижте как числата оживяват!</p>
+            <a href="https://www.tinkercad.com/dashboard" target="_blank" class="inline-block bg-white text-indigo-900 font-black px-8 py-3 rounded-full hover:scale-105 transition">Към Tinkercad →</a>
+        </div>
+
+    </main>
+
+    <footer class="mt-20 text-center text-slate-400 text-xs">
+        © 2024 Лаборатория по Роботика | Образователен ресурс
+    </footer>
+
+</body>
+</html>
